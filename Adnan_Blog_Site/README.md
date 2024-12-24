@@ -1,8 +1,7 @@
 # Django Blog Project Documentation
 
 **Version:** 1.0  
-**License:** MIT License  
-**Author:** Mark Carcillar
+**Author:** Adnan Faisal
 
 ## Table of Contents
 
@@ -137,9 +136,6 @@ These dependencies significantly contribute to the functionality and aesthetics 
 
 Please note that detailed installation instructions for these dependencies can be found in the "Getting Started" section of this documentation.
 
-## License
-
-This project is licensed under the MIT License.
 
 ## Contributing
 
@@ -147,7 +143,7 @@ I welcome contributions from the developer community to help improve and grow th
 
 ## Contact
 
-For support, feedback, or inquiries, please contact markac.work@gmail.com.
+For support, feedback, or inquiries, please contact ajfaisal1208023@gmail.com.
 
 ---
 
