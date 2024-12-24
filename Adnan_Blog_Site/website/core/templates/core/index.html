@@ -1,0 +1,112 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4 text-primary">Latest Blogs</h2>
+
+    <!-- Sort Options -->
+    <div class="d-flex align-items-center mb-4">
+        <span class="text-muted me-2"><i class="fas fa-sort"></i> Sort By:</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Sort Blogs">
+            <button type="button" class="btn btn-outline-primary sort-btn" data-sort="date">Date</button>
+            <button type="button" class="btn btn-outline-primary sort-btn" data-sort="views">Views</button>
+            <button type="button" class="btn btn-outline-primary sort-btn" data-sort="likes">Likes</button>
+        </div>
+    </div>
+
+    <!-- Blog Cards -->
+    <div class="row">
+        {% for blog in blogs %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">
+                            <a href="{% url 'blog_detail' blog.pk %}" class="text-decoration-none">{{ blog.title }}</a>
+                        </h5>
+                        <p class="text-muted small mb-1">
+                            {% if user == blog.author %}
+                                You
+                            {% else %}
+                                {{ blog.author.get_full_name|default:blog.author.username }}
+                            {% endif %}
+                            | {{ blog.created_at|date:"F d, Y" }}
+                        </p>
+                        <p class="small mb-3">{{ blog.content|truncatechars:100 }}</p>
+                        <p class="text-muted small">
+                            <i class="fas fa-thumbs-up"></i> {{ blog.likemodel_set.count }} Likes
+                            &nbsp;|&nbsp;
+                            <i class="fas fa-eye"></i> {{ blog.views }} Views
+                        </p>
+                        <a href="{% url 'blog_detail' blog.pk %}" class="btn btn-outline-primary btn-sm">Read More</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center" role="alert">
+                    No blogs found.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for i in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    // Sorting functionality
+    const sortBtns = document.querySelectorAll('.sort-btn');
+    const urlParams = new URLSearchParams(window.location.search);
+    const sortedBy = urlParams.get('sorted_by');
+
+    sortBtns.forEach(btn => {
+        if (btn.getAttribute('data-sort') === sortedBy) {
+            btn.classList.add('active');
+        }
+
+        btn.addEventListener('click', () => {
+            const sortParam = btn.getAttribute('data-sort');
+            const baseURL = window.location.origin + window.location.pathname;
+            const newURL = `${baseURL}?sorted_by=${sortParam}`;
+            window.location.href = newURL;
+        });
+    });
+</script>
+{% endblock %}

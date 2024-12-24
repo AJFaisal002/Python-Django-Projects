@@ -1,0 +1,147 @@
+{% extends 'core/base.html' %}
+{% csrf_token %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Blog Media -->
+        {% if blog.media %}
+        <div class="col-lg-6 mb-4">
+            <img id="media" src="{{ blog.media.url }}" class="img-fluid rounded shadow" alt="{{ blog.title }} Media">
+        </div>
+        {% endif %}
+
+        <!-- Blog Details -->
+        <div class="col-lg-6">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">{{ blog.title }}</h2>
+                {% if user.is_authenticated and user == blog.author %}
+                <div>
+                    <a href="{% url 'blog_update' blog.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i> Edit</a>
+                    <a href="{% url 'blog_delete' blog.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Delete</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <p class="text-muted">
+                <i class="fas fa-user"></i>
+                {% if user == blog.author %}You{% else %}{{ blog.author.get_full_name|default:blog.author.username }}{% endif %}
+                | <i class="fas fa-calendar"></i> {{ blog.created_at }}
+            </p>
+
+            <p class="lead">{{ blog.content|linebreaks }}</p>
+
+            <div class="d-flex align-items-center">
+                <button class="btn btn-outline-primary me-2" id="like-button" data-blog-id="{{ blog.id }}">
+                    <i class="fas fa-thumbs-up"></i> Like
+                </button>
+                <span id="likes-count" class="text-muted">{{ blog.likemodel_set.count }} Likes</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="mt-5">
+        <h3>Comments</h3>
+        <hr>
+        {% for comment in blog.commentmodel_set.all %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    {% if user == comment.user %}You{% else %}{{ comment.user.get_full_name|default:comment.user.username }}{% endif %}
+                </h5>
+                <p class="card-text">{{ comment.text }}</p>
+                <p class="card-text">
+                    <small class="text-muted">{{ comment.created_at }}</small>
+                </p>
+            </div>
+        </div>
+        {% empty %}
+        <p id="no-comment" class="text-muted">No comments yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Add Comment Form -->
+    <div class="mt-4">
+        <form id="comment-form" method="POST" class="card card-body shadow-sm">
+            {% csrf_token %}
+            <label for="comment-text" class="form-label"><i class="far fa-comment"></i> Leave a Comment</label>
+            <textarea id="comment-text" class="form-control mb-3" rows="3" name="form" placeholder="Write your comment here..."></textarea>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    const csrfToken = "{{ csrf_token }}";
+
+    // Like Button Script
+    document.addEventListener('DOMContentLoaded', () => {
+        const likeButton = document.getElementById('like-button');
+        const blogId = likeButton.getAttribute('data-blog-id');
+
+        likeButton.addEventListener('click', () => {
+            fetch('/api/like-toggle/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({ blog_id: blogId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('likes-count').innerText = `${data.likes_count} Likes`;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    // Comment Form Script
+    const commentForm = document.getElementById('comment-form');
+    const commentText = document.getElementById('comment-text');
+    const noComment = document.getElementById('no-comment');
+
+    commentForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = commentText.value;
+        const blogId = "{{ blog.id }}";
+
+        fetch(`/api/blog/${blogId}/comment/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ text }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === 'Comment created successfully') {
+                commentText.value = '';
+                if (noComment) noComment.style.display = 'none';
+
+                const commentSection = document.querySelector('.comment-section');
+                const newComment = document.createElement('div');
+                newComment.classList.add('card', 'mb-3');
+                newComment.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">You</h5>
+                        <p class="card-text">${text}</p>
+                        <p class="card-text">
+                            <small class="text-muted">Just now</small>
+                        </p>
+                    </div>
+                `;
+                commentSection.prepend(newComment);
+            } else {
+                alert('Failed to add comment. Please try again.');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock extra_script %}
